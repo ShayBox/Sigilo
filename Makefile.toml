@@ -1,0 +1,16 @@
+[tasks.build]
+command = "cross"
+args = [
+    "build",
+    "--release",
+    "--target",
+    "x86_64-unknown-linux-gnu",
+]
+
+[tasks.release]
+dependencies = ["build"]
+command = "scp"
+args = [
+    "target/x86_64-unknown-linux-gnu/release/sigilo",
+    "root@sigilo.wan:~/Sigilo/sigilo",
+]
