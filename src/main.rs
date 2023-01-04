@@ -1,10 +1,14 @@
-use crate::entity::{player, server};
-use craftping::{tokio::ping, Response};
+use std::{
+    fs::File,
+    io::{BufRead, BufReader},
+    time::Duration,
+};
+
+use craftping::{Response, tokio::ping};
 use dotenvy_macro::dotenv;
 use eyre::Result;
 use futures::{stream, StreamExt};
 use sea_orm::{
-    sea_query::{tests_cfg::json, OnConflict},
     ActiveValue::Set,
     ConnectionTrait,
     Database,
@@ -12,13 +16,11 @@ use sea_orm::{
     DatabaseConnection,
     EntityTrait,
     QueryTrait,
-};
-use std::{
-    fs::File,
-    io::{BufRead, BufReader},
-    time::Duration,
+    sea_query::{OnConflict, tests_cfg::json},
 };
 use tokio::{net::TcpStream, time::timeout};
+
+use crate::entity::{player, server};
 
 mod entity;
 
@@ -100,7 +102,7 @@ async fn handle_response(
     db.execute(statement).await?;
 
     let Some(samples) = response.sample else {
-        return Ok(())
+        return Ok(());
     };
 
     for sample in samples {

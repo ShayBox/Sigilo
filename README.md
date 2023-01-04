@@ -4,7 +4,10 @@ Scan and collect Minecraft Servers using [masscan] and [craftping]
 I recommend using [mat-1's fork of masscan](https://github.com/mat-1/masscan) to further narrow results
 
 ## Usage:
-Results are available via my [API]
+Results are available via my [API] and direct database access  
+You are free to query and dump the database, however  
+Please be respectful and don't abuse my services  
+`mysql://sigilo@vps.shaybox.com/sigilo`
 
 ## Notes:
 If you'd like to self-host this project, you'll need the following:  
