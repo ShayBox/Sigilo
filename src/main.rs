@@ -1,14 +1,16 @@
 use std::{
-    fs::File,
-    io::{BufRead, BufReader},
+    fs::{self, File},
+    io::{BufRead, BufReader, Seek, SeekFrom, Write},
+    net::Ipv4Addr,
     time::Duration,
 };
 
-use craftping::{Response, tokio::ping};
+use craftping::{tokio::ping, Response};
 use dotenvy_macro::dotenv;
 use eyre::Result;
 use futures::{stream, StreamExt};
 use sea_orm::{
+    sea_query::{tests_cfg::json, OnConflict},
     ActiveValue::Set,
     ConnectionTrait,
     Database,
@@ -16,7 +18,6 @@ use sea_orm::{
     DatabaseConnection,
     EntityTrait,
     QueryTrait,
-    sea_query::{OnConflict, tests_cfg::json},
 };
 use tokio::{net::TcpStream, time::timeout};
 
@@ -28,16 +29,52 @@ mod entity;
 async fn main() -> Result<()> {
     let db = Database::connect(dotenv!("DATABASE_URL")).await?;
 
-    let file = File::open("masscan.txt")?;
-    let reader = BufReader::new(file);
+    create_mat1_ips_file().await?;
+    for file in [File::open("mat-1.txt")?, File::open("masscan.txt")?] {
+        let reader = BufReader::new(file);
+        stream::iter(reader.lines())
+            .for_each_concurrent(1_000, |line| async {
+                if (timeout(Duration::from_secs(60), map_line(&db, line)).await).is_err() {
+                    println!("Did not receive response within 60 seconds")
+                }
+            })
+            .await;
+    }
 
-    stream::iter(reader.lines())
-        .for_each_concurrent(500, |line| async {
-            if (timeout(Duration::from_secs(15), map_line(&db, line)).await).is_err() {
-                println!("Did not receive response within 15 seconds")
-            }
-        })
-        .await;
+    Ok(())
+}
+
+// Generated using ChatGPT
+async fn create_mat1_ips_file() -> Result<()> {
+    // Remove and Create sigilo.txt
+    let _ = fs::remove_file("mat-1.txt");
+    let mut sigilo_file = File::create("mat-1.txt")?;
+
+    // Download the binary file
+    let url = "https://github.com/mat-1/minecraft-scans/raw/main/ips";
+    let resp = reqwest::get(url).await?;
+    let bytes = resp.bytes().await?;
+    let buffer = bytes.to_vec();
+
+    // Split the binary file into 6 byte chunks
+    let chunks = buffer.chunks(6);
+    for chunk in chunks {
+        // Split the 6 byte chunks into 4 and 2 bytes
+        let addr_bytes = &chunk[0..4];
+        let port_bytes = &chunk[4..6];
+
+        // Parse the bytes into an IP address and port
+        let ip = Ipv4Addr::from(u32::from_be_bytes([
+            addr_bytes[0],
+            addr_bytes[1],
+            addr_bytes[2],
+            addr_bytes[3],
+        ]));
+        let port = u16::from_be_bytes([port_bytes[0], port_bytes[1]]);
+
+        // Write the IP address and port to the file
+        writeln!(sigilo_file, "open tcp {port} {ip} 0")?;
+    }
 
     Ok(())
 }
