@@ -1,6 +1,6 @@
 use std::{
     fs::{self, File},
-    io::{BufRead, BufReader, Seek, SeekFrom, Write},
+    io::{BufRead, BufReader, Write},
     net::Ipv4Addr,
     time::Duration,
 };
@@ -12,12 +12,7 @@ use futures::{stream, StreamExt};
 use sea_orm::{
     sea_query::{tests_cfg::json, OnConflict},
     ActiveValue::Set,
-    ConnectionTrait,
-    Database,
-    DatabaseBackend,
-    DatabaseConnection,
-    EntityTrait,
-    QueryTrait,
+    ConnectionTrait, Database, DatabaseBackend, DatabaseConnection, EntityTrait, QueryTrait,
 };
 use tokio::{net::TcpStream, time::timeout};
 
